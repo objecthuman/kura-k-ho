@@ -54,7 +54,7 @@ class DatabaseSessionManager:
             await session.close()
 
 
-sessionmanager = DatabaseSessionManager(settings.POSTGRES_URI, {})
+sessionmanager = DatabaseSessionManager(settings.POSTGRES_URI_ORM, {})
 
 
 async def get_db_session():
