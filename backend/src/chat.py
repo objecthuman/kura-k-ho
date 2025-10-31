@@ -6,8 +6,8 @@ from uuid import UUID
 
 from src.db.pg_session import get_db_session
 from src.db.models.chat_sesion import ChatSession
-from src.db.models.chat_message import ChatMessage
 from src.dependencies import get_current_user
+from src.scraper.google_search import search_nepal_news
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -26,18 +26,23 @@ async def start_chat_flow(
     user_query: str,
     user_id: str,
 ):
-    # TODO: Implement the actual chat flow logic here
-    # This could include:
-    # - Saving the user message to the database
-    # - Processing with AI/LLM
-    # - Saving the AI response
-    # - Any other chat-related processing
+    try:
+        news_articles = await search_nepal_news(user_query)
 
-    print(f"Processing chat for session {session_id}")
-    print(f"User query: {user_query}")
-    print(f"User ID: {user_id}")
+        if not news_articles:
+            print("No news articles found")
+            return
 
-    # Example: You would add your chat processing logic here
+        print(f"Found {len(news_articles)} news articles")
+
+        for article in news_articles:
+            print(f"Title: {article['title']}")
+            print(f"Link: {article['link']}")
+            print(f"Date: {article['date']}")
+            print("---")
+
+    except Exception as e:
+        print(f"Error in chat flow: {e}")
 
 
 @router.post("/{session_id}/chat", response_model=ChatResponse)

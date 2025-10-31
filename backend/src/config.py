@@ -4,8 +4,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     SUPABASE_URL: str
     SUPABASE_API_KEY: str
-    POSTGRES_URI: str  # For migrations (direct connection)
-    POSTGRES_URI_ORM: str  # For ORM operations (connection pooling)
+    POSTGRES_URI: str
+    POSTGRES_URI_ORM: str
+    SERPER_API_KEY: str
+    SERPER_API_URL: str = "https://google.serper.dev/search"
 
     model_config = SettingsConfigDict(
         env_file=".env",
