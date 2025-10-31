@@ -10,7 +10,8 @@ from src.db.pg_session import get_db_session
 from src.db.models.chat_sesion import ChatSession
 from src.db.models.chat_message import ChatMessage
 from src.dependencies import get_current_user
-from src.scraper.google_search import search_nepal_news
+from src.scraper.annapurna_scraper import scrape_news
+from src.scraper.google_search import NewsArticle, search_nepal_news
 from src.config import settings
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -23,6 +24,17 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     message: str
     session_id: UUID
+
+
+class ScrapedNews(BaseModel):
+    title: str
+    body: str
+    date: str
+
+
+async def scrape_link(article: NewsArticle) -> ScrapedNews:
+    if article["link"].startswith("https://anarpurna.com"):
+        await scrape_news(article["link"])
 
 
 async def start_chat_flow(
@@ -60,6 +72,8 @@ async def start_chat_flow(
         await db.commit()
 
         news_articles = await search_nepal_news(user_query)
+
+        # scraped_artciles = await asyncio.gather()
 
         if not news_articles:
             print("No news articles found")
