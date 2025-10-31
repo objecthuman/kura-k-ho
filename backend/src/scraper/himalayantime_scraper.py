@@ -1,9 +1,10 @@
-import requests
+import httpx
 from bs4 import BeautifulSoup
 
-def scrape_news(url):
+
+async def scrape_news(url):
     """
-    Scrapes the heading and body text of a news article from the given URL.
+    Asynchronously scrapes the heading and body text of a news article from the given URL.
 
     Args:
         url (str): URL of the news article.
@@ -12,9 +13,10 @@ def scrape_news(url):
         dict: {"heading": str, "body": str}
     """
     try:
-        # Step 1: Fetch page
-        response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
-        response.raise_for_status()
+        # Step 1: Fetch page asynchronously
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+            response.raise_for_status()
 
         # Step 2: Parse HTML
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -31,7 +33,6 @@ def scrape_news(url):
         )
 
         if body_container:
-            # Extract all <p> tags text
             paragraphs = [p.get_text(strip=True) for p in body_container.find_all("p")]
             body_text = "\n\n".join(paragraphs)
         else:
@@ -44,9 +45,5 @@ def scrape_news(url):
         return {"heading": None, "body": None}
 
 
-# Example usage
-if __name__ == "__main__":
-    url = input("Enter news article URL: ").strip()
-    data = scrape_news(url)
-    print("\n📰 Heading:\n", data["heading"])
-    print("\n📜 Body:\n", data["body"])
+
+

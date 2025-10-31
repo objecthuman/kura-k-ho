@@ -1,7 +1,8 @@
 import requests
+import httpx
 from bs4 import BeautifulSoup
 
-def scrape_news(url):
+async def scrape_news(url):
     """
     Scrapes the heading and body text of a Next.js-based news article.
 
@@ -12,9 +13,9 @@ def scrape_news(url):
         dict: {"heading": str, "body": str}
     """
     try:
-        # Step 1: Fetch the page
-        response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
-        response.raise_for_status()
+        async with httpx.AsyncClient as client: 
+            response = await client.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+            response.raise_for_status()
 
         # Step 2: Parse HTML
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -42,10 +43,3 @@ def scrape_news(url):
         print(f"❌ Error scraping {url}: {e}")
         return {"heading": None, "body": None}
 
-
-# Example usage
-if __name__ == "__main__":
-    url = input("Enter news article URL: ").strip()
-    data = scrape_news(url)
-    print("\n📰 Heading:\n", data["heading"])
-    print("\n📜 Body:\n", data["body"])
