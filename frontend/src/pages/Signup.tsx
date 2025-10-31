@@ -10,7 +10,6 @@ import { Loader2 } from 'lucide-react';
 export function Signup() {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -34,15 +33,17 @@ export function Signup() {
     setIsLoading(true);
 
     try {
-      const response = await authService.signup({ name, email, password });
+      const response = await authService.signup({ email, password });
 
-      if (response.success && response.data) {
-        login(response.data.user, response.data.token);
+      // Backend returns: { message, user, session: { access_token, ... } }
+      if (response.user && response.session?.access_token) {
+        login(response.user, response.session.access_token);
         navigate('/preferences');
       } else {
         setError(response.error || 'Signup failed');
       }
     } catch (err) {
+      console.error(err);
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -65,20 +66,6 @@ export function Signup() {
                 {error}
               </div>
             )}
-            <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium">
-                Full Name
-              </label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="John Doe"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                disabled={isLoading}
-              />
-            </div>
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium">
                 Email

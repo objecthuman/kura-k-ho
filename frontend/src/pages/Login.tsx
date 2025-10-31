@@ -23,18 +23,21 @@ export function Login() {
     try {
       const response = await authService.login({ email, password });
 
-      if (response.success && response.data) {
-        login(response.data.user, response.data.token);
+      // Backend returns: { message, user, session, access_token }
+      if (response.access_token && response.user) {
+        login(response.user, response.access_token);
         navigate('/');
       } else {
         setError(response.error || 'Login failed');
       }
     } catch (err) {
+      console.error(err);
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted px-4">

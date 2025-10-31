@@ -1,7 +1,6 @@
 export interface User {
   id: string;
   email: string;
-  name: string;
   preferences?: NewsPreferences;
   createdAt: Date;
 }
@@ -69,9 +68,17 @@ export interface ChatSession {
 
 export type ChatMode = 'fact-check' | 'summarize' | 'general';
 
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
+export interface ApiResponse<T = any> {
+  success?: boolean;       // optional now (since backend may not send it)
+  data?: T;                // optional payload container
+  error?: string;          // backend or client error message
+  message?: string;        // human-readable message
+  user?: any;              // for Supabase-style responses
+  session?: {
+    access_token?: string;
+    refresh_token?: string;
+    user?: any;
+  };
+  access_token?: string;   // direct top-level token
 }
+

@@ -9,12 +9,17 @@ export interface LoginRequest {
 export interface SignupRequest {
   email: string;
   password: string;
-  name: string;
 }
 
 export interface AuthResponse {
-  user: User;
-  token: string;
+  message: string;
+  user: any;
+  session?: {
+    access_token: string;
+    refresh_token: string;
+    user?: any;
+  };
+  access_token?: string;  // Login returns this at top level
 }
 
 export const authService = {
