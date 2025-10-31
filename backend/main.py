@@ -1,12 +1,14 @@
 from fastapi import FastAPI
 from src.auth import router as auth_router
 from src.routes import router as sessions_router
+from src.chat import router as chat_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
 app.include_router(auth_router)
 app.include_router(sessions_router)
+app.include_router(chat_router)
 
 app.add_middleware(
     CORSMiddleware,

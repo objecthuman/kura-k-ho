@@ -1,0 +1,78 @@
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from uuid import UUID
+
+from src.db.pg_session import get_db_session
+from src.db.models.chat_sesion import ChatSession
+from src.db.models.chat_message import ChatMessage
+from src.dependencies import get_current_user
+
+router = APIRouter(prefix="/chat", tags=["chat"])
+
+
+class ChatRequest(BaseModel):
+    user_query: str
+
+
+class ChatResponse(BaseModel):
+    message: str
+    session_id: UUID
+
+
+async def start_chat_flow(
+    session_id: UUID,
+    user_query: str,
+    user_id: str,
+):
+    # TODO: Implement the actual chat flow logic here
+    # This could include:
+    # - Saving the user message to the database
+    # - Processing with AI/LLM
+    # - Saving the AI response
+    # - Any other chat-related processing
+
+    print(f"Processing chat for session {session_id}")
+    print(f"User query: {user_query}")
+    print(f"User ID: {user_id}")
+
+    # Example: You would add your chat processing logic here
+
+
+@router.post("/{session_id}/chat", response_model=ChatResponse)
+async def chat(
+    session_id: UUID,
+    request: ChatRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db_session),
+    current_user=Depends(get_current_user),
+):
+    try:
+        result = await db.execute(
+            select(ChatSession).where(
+                ChatSession.id == session_id,
+                ChatSession.user_id == UUID(current_user.id),
+            )
+        )
+        session = result.scalar_one_or_none()
+
+        if not session:
+            raise HTTPException(
+                status_code=404,
+                detail="Session not found or you don't have access to it",
+            )
+
+        background_tasks.add_task(
+            start_chat_flow,
+            session_id=session_id,
+            user_query=request.user_query,
+            user_id=current_user.id,
+        )
+
+        return ChatResponse(message="Chat processing started", session_id=session_id)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
