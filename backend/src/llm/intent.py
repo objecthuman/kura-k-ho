@@ -1,5 +1,3 @@
-import json
-import os
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from openai import AsyncOpenAI
@@ -7,10 +5,11 @@ from src.config import settings
 
 load_dotenv()
 
+
 class IntentOutput(BaseModel):
     is_valid: bool
     reason: str
-    clarification_message:str
+    clarification_message: str
 
 
 VALIDATION_SYSTEM_PROMPT = """You are a query validator for a news authentication system. Determine if a user's query is appropriate for fact-checking against news sources.
@@ -54,27 +53,31 @@ Examples of clarification_message:
 - "I can't help with how-to questions. I'm designed to verify news stories and fact-check claims about current events."
 """
 
-client = AsyncOpenAI(api_key = settings.OPENAI_KEY)
+client = AsyncOpenAI(api_key=settings.OPENAI_KEY)
 
 
 async def validate_news_query(user_query: str) -> IntentOutput:
     try:
-
-        user_message = f'Is this a valid news fact-checking query?\n\nQuery: "{user_query}"'
+        user_message = (
+            f'Is this a valid news fact-checking query?\n\nQuery: "{user_query}"'
+        )
 
         response = await client.beta.chat.completions.parse(
-            model="gpt-4o-mini",
+            model="gpt-4",
             messages=[
                 {"role": "system", "content": VALIDATION_SYSTEM_PROMPT},
-                {"role": "user", "content": user_message}
+                {"role": "user", "content": user_message},
             ],
             temperature=0.3,
             max_tokens=150,
-            response_format=IntentOutput
+            response_format=IntentOutput,
         )
 
         return response.output_parsed
-    
+
     except Exception as e:
-        print(f"Error validating query: {e}")
-        return False
+        return IntentOutput(
+            is_valid=False,
+            clarification_message="soemthing went wrong while generating valid clairification message.",
+            reason=str(e),
+        )
