@@ -133,8 +133,6 @@ async def start_chat_flow(
             )
             return
 
-        await channel.subscribe()
-
         searching_message = (
             "Searching for news in the following sites: "
             "english.onlinekhabar.com, kathmandupost.com, thehimalayantimes.com, "
