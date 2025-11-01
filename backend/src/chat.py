@@ -140,13 +140,14 @@ async def start_chat_flow(
         )
         await send_message(channel, db, session_id, searching_message)
 
-        return
-
         news_articles = await search_nepal_news(user_query)
 
         if not news_articles:
             await send_message(
-                channel, db, session_id, "No particular article as much was found."
+                channel,
+                db,
+                session_id,
+                "No particular news was found regarding your query.",
             )
             print("No news articles found")
             return
@@ -161,6 +162,12 @@ async def start_chat_flow(
 
         if not valid_articles:
             print("No articles could be scraped")
+            await send_message(
+                channel,
+                db=db,
+                session_id=session_id,
+                content="something went wrong while getting news articles :(",
+            )
             return
 
         print(f"Successfully scraped {len(valid_articles)} articles")
@@ -189,6 +196,12 @@ async def start_chat_flow(
             await send_message(channel, db, session_id, final_answer)
             print("Final answer sent to user")
         else:
+            await send_message(
+                channel,
+                db,
+                session_id,
+                "something went wrong while generating the final response :(",
+            )
             print("Failed to generate final answer")
 
     except Exception as e:
