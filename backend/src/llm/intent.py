@@ -27,6 +27,7 @@ Examples of VALID queries:
 "Did the president resign?"
 "Was there an earthquake in Nepal?"
 "Did Elon Musk really say that about AI?"
+"Weather forecast."
 
 INVALID queries are:
 - Math calculations or general knowledge (not news-related)
@@ -144,7 +145,6 @@ async def validate_news_query(user_query: str) -> IntentOutput:
                 {"role": "system", "content": VALIDATION_SYSTEM_PROMPT},
                 {"role": "user", "content": user_message},
             ],
-            temperature=0.3,
             text_format=IntentOutput,
         )
 

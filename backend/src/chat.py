@@ -123,7 +123,7 @@ async def start_chat_flow(
         intent_output = await validate_news_query(user_query=user_query)
         if not intent_output.is_valid:
             print(
-                f"invalid question recieved {user_query}, reason: {intent_output.reason}, clarification message: {intent_output.clarification_message}"
+                f"invalid question recieved:  {user_query}, reason: {intent_output.reason}, clarification message: {intent_output.clarification_message}"
             )
             await send_message(
                 channel,
@@ -214,6 +214,8 @@ async def start_chat_flow(
             "Something went wrong while generating your response.",
         )
         print(f"Error in chat flow: {e}")
+    finally:
+        await channel.unsubscribe()
 
 
 @router.post("/{session_id}/chat", response_model=ChatResponse)
