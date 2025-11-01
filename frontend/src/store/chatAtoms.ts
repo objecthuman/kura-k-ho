@@ -7,12 +7,25 @@ export const sessionsAtom = atom<ChatSession[]>([]);
 export const messagesAtom = atom<Message[]>([]);
 export const chatLoadingAtom = atom<boolean>(false);
 export const chatModeAtom = atom<ChatMode>("fact-check");
-export const streamingMessageAtom = atom<Message | null>(null);
 
 // Write-only atoms for actions
 export const addMessageAtom = atom(null, (get, set, message: Message) => {
   const currentMessages = get(messagesAtom);
   set(messagesAtom, [...currentMessages, message]);
+});
+
+export const updateMessageAtom = atom(null, (get, set, messageId: string, updates: Partial<Message>) => {
+  const currentMessages = get(messagesAtom);
+  const messageIndex = currentMessages.findIndex(m => m.id === messageId);
+
+  if (messageIndex !== -1) {
+    const updatedMessages = [...currentMessages];
+    updatedMessages[messageIndex] = { ...updatedMessages[messageIndex], ...updates };
+    set(messagesAtom, updatedMessages);
+  } else {
+    // If message doesn't exist, add it as a new message
+    set(messagesAtom, [...currentMessages, { id: messageId, ...updates } as Message]);
+  }
 });
 
 export const clearMessagesAtom = atom(null, (_get, set) => {

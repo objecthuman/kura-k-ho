@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useSetAtom } from 'jotai';
 import { supabase } from '@/lib/supabase';
-import { streamingMessageAtom } from '@/store/chatAtoms';
+import { updateMessageAtom } from '@/store/chatAtoms';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 interface MessageChunk {
@@ -16,7 +16,7 @@ interface MessageChunk {
 }
 
 export function useRealtimeMessages(sessionId: string | null) {
-  const setStreamingMessage = useSetAtom(streamingMessageAtom);
+  const updateMessage = useSetAtom(updateMessageAtom);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -34,14 +34,20 @@ export function useRealtimeMessages(sessionId: string | null) {
             console.log('Message chunk received:', payload);
 
             const chunk = payload.payload as MessageChunk;
-              setStreamingMessage({
-                id: chunk.message_id || Date.now().toString(),
+
+            // Update or create the message with streaming content
+            updateMessage(
+              chunk.message_id || Date.now().toString(),
+              {
                 role: chunk.role || 'assistant',
                 content: chunk.content ?? "",
                 session_id: chunk.session_id,
                 timestamp: new Date(chunk.timestamp || Date.now()),
-                isStreaming: true,
-              });
+                isStreaming: chunk.type !== 'end',
+                factCheckResult: chunk.factCheckResult,
+                newsSummary: chunk.newsSummary,
+              }
+            );
           }
         )
         .subscribe((status) => {
@@ -58,5 +64,5 @@ export function useRealtimeMessages(sessionId: string | null) {
         supabase.removeChannel(channel);
       }
     };
-  }, [sessionId, setStreamingMessage]);
+  }, [sessionId, updateMessage]);
 }

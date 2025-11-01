@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { messagesAtom, chatLoadingAtom, chatModeAtom, addMessageAtom, currentSessionAtom, streamingMessageAtom } from "@/store/chatAtoms";
+import { messagesAtom, chatLoadingAtom, chatModeAtom, addMessageAtom, currentSessionAtom } from "@/store/chatAtoms";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
@@ -14,10 +14,7 @@ export function ChatContainer() {
   const chatMode = useAtomValue(chatModeAtom);
   const addMessage = useSetAtom(addMessageAtom);
   const currentSession = useAtomValue(currentSessionAtom);
-  const [streamingMessage, setStreamingMessage] = useAtom(streamingMessageAtom);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  console.log({ streamingMessage })
 
   // Set up real-time subscription for messages
   useRealtimeMessages(currentSession?.id || null);
@@ -28,15 +25,7 @@ export function ChatContainer() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, streamingMessage]);
-
-  // When streaming completes, add the message to the messages list
-  useEffect(() => {
-    if (streamingMessage && !streamingMessage.isStreaming) {
-      addMessage(streamingMessage);
-      setStreamingMessage(null);
-    }
-  }, [streamingMessage, addMessage, setStreamingMessage]);
+  }, [messages]);
 
   const handleSendMessage = async (content: string, session_id: string) => {
     // Add user message
@@ -121,10 +110,7 @@ export function ChatContainer() {
               {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
               ))}
-              {streamingMessage && (
-                <ChatMessage key="streaming" message={streamingMessage} />
-              )}
-              {isLoading && !streamingMessage && (
+              {isLoading && !messages.some(m => m.isStreaming) && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span className="text-sm">Thinking...</span>
