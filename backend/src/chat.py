@@ -115,15 +115,20 @@ async def start_chat_flow(
     user_query: str,
     db: AsyncSession,
 ):
-    
     try:
-        
         client = await acreate_client(settings.SUPABASE_URL, settings.SUPABASE_API_KEY)
         channel = client.channel(str(session_id))
         intent_output = await validate_news_query(user_query=user_query)
         if not intent_output.is_valid:
-            print(f"invalid question recieved {user_query}, reason: {intent_output.reason}, clarification message: {intent_output.clarification_message}")
-            await send_message(db, session_id, intent_output.clarification_message)
+            print(
+                f"invalid question recieved {user_query}, reason: {intent_output.reason}, clarification message: {intent_output.clarification_message}"
+            )
+            await send_message(
+                channel,
+                db,
+                session_id,
+                intent_output.clarification_message,
+            )
             return
 
         searching_message = (
@@ -136,7 +141,9 @@ async def start_chat_flow(
         news_articles = await search_nepal_news(user_query)
 
         if not news_articles:
-            send_message(channel,db,session_id,"No particular article as much was found.")
+            await send_message(
+                channel, db, session_id, "No particular article as much was found."
+            )
             print("No news articles found")
             return
 
@@ -180,14 +187,13 @@ async def start_chat_flow(
         else:
             print("Failed to generate final answer")
 
-
-        for i, summary in enumerate(summaries):
-            print(f"Summary {i + 1}:")
-            print(summary)
-            print("---")
-
     except Exception as e:
-        send_message(channel,db,session_id,"Something went wrong while generating your response.")
+        await send_message(
+            channel,
+            db,
+            session_id,
+            "Something went wrong while generating your response.",
+        )
         print(f"Error in chat flow: {e}")
 
 
@@ -227,5 +233,3 @@ async def chat(
         raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-     
