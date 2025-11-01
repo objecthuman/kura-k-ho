@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSetAtom } from 'jotai';
-import { updatePreferencesAtom } from '@/store/authAtoms';
-import { authService } from '@/services/authService';
 import { Loader2, Settings, Sparkles, ArrowRight } from 'lucide-react';
+import { useUpdatePreferences } from '@/hooks/useAuth';
 
 const CATEGORIES = [
   'Politics',
@@ -33,9 +31,8 @@ const CATEGORY_COLORS = [
 
 export function Preferences() {
   const navigate = useNavigate();
-  const updatePreferences = useSetAtom(updatePreferencesAtom);
+  const updatePreferencesMutation = useUpdatePreferences();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const toggleCategory = (category: string) => {
@@ -55,26 +52,19 @@ export function Preferences() {
       return;
     }
 
-    setIsLoading(true);
+    const preferences = {
+      categories: selectedCategories,
+      sources: []
+    };
 
-    try {
-      const preferences = {
-        categories: selectedCategories,
-        sources: []
-      };
-
-      const response = await authService.updatePreferences(preferences);
-
-      if (response.success && response.data) {
+    updatePreferencesMutation.mutate(preferences, {
+      onSuccess: () => {
         navigate('/');
-      } else {
-        setError(response.error || 'Failed to save preferences');
-      }
-    } catch (err) {
-      setError('An unexpected error occurred');
-    } finally {
-      setIsLoading(false);
-    }
+      },
+      onError: (err: Error) => {
+        setError(err.message || 'Failed to save preferences');
+      },
+    });
   };
 
   return (
@@ -151,10 +141,10 @@ export function Preferences() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading || selectedCategories.length === 0}
+              disabled={updatePreferencesMutation.isPending || selectedCategories.length === 0}
               className="w-full px-8 py-4 bg-pink-500 border-4 border-black font-black text-xl uppercase shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3 text-white"
             >
-              {isLoading ? (
+              {updatePreferencesMutation.isPending ? (
                 <>
                   <Loader2 className="w-6 h-6 animate-spin" />
                   Saving...

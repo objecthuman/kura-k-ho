@@ -1,21 +1,22 @@
 import { useEffect } from 'react';
 import { useSetAtom } from 'jotai';
 import { supabase } from '@/lib/supabase';
-import { addMessageAtom } from '@/store/chatAtoms';
-import type { Message } from '@/types';
+import { streamingMessageAtom } from '@/store/chatAtoms';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
-interface SupabaseMessage {
-  id: string;
+interface MessageChunk {
+  type: 'start' | 'chunk' | 'end';
   session_id: string;
-  role: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
+  message_id?: string;
+  content?: string;
+  role?: 'user' | 'assistant';
+  factCheckResult?: any;
+  newsSummary?: any;
+  timestamp?: string;
 }
 
 export function useRealtimeMessages(sessionId: string | null) {
-  const addMessage = useSetAtom(addMessageAtom);
+  const setStreamingMessage = useSetAtom(streamingMessageAtom);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -23,32 +24,24 @@ export function useRealtimeMessages(sessionId: string | null) {
     let channel: RealtimeChannel;
 
     const setupSubscription = async () => {
-      // Subscribe to inserts on the chat_messages table for this session
+      // Subscribe to broadcast messages for this session
       channel = supabase
-        .channel(`chat_messages:session_id=eq.${sessionId}`)
+        .channel(sessionId)
         .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'chat_messages',
-            filter: `session_id=eq.${sessionId}`,
-          },
+          'broadcast',
+          { event: 'message-broadcast' },
           (payload) => {
-            console.log('New message received:', payload);
+            console.log('Message chunk received:', payload);
 
-            const newMessage = payload.new as SupabaseMessage;
-
-            // Convert to our Message format
-            const message: Message = {
-              id: newMessage.id,
-              role: newMessage.role as 'user' | 'assistant',
-              content: newMessage.content,
-              timestamp: new Date(newMessage.created_at),
-            };
-
-            // Add to our local state
-            addMessage(message);
+            const chunk = payload.payload as MessageChunk;
+              setStreamingMessage({
+                id: chunk.message_id || Date.now().toString(),
+                role: chunk.role || 'assistant',
+                content: '',
+                session_id: chunk.session_id,
+                timestamp: new Date(chunk.timestamp || Date.now()),
+                isStreaming: true,
+              });
           }
         )
         .subscribe((status) => {
@@ -65,5 +58,5 @@ export function useRealtimeMessages(sessionId: string | null) {
         supabase.removeChannel(channel);
       }
     };
-  }, [sessionId, addMessage]);
+  }, [sessionId, setStreamingMessage]);
 }

@@ -1,17 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useSetAtom } from 'jotai';
-import { loginAtom } from '@/store/authAtoms';
-import { authService } from '@/services/authService';
 import { Loader2, Lock, Mail, ArrowRight, UserPlus } from 'lucide-react';
+import { useSignup } from '@/hooks/useAuth';
 
 export function Signup() {
   const navigate = useNavigate();
-  const login = useSetAtom(loginAtom);
+  const signupMutation = useSignup();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,24 +25,17 @@ export function Signup() {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const response = await authService.signup({ email, password });
-
-      // Backend returns: { message, user, session: { access_token, ... } }
-      if (response.user && response.session?.access_token) {
-        login({ user: response.user, token: response.session.access_token });
-        navigate('/preferences');
-      } else {
-        setError(response.error || 'Signup failed');
+    signupMutation.mutate(
+      { email, password },
+      {
+        onSuccess: () => {
+          navigate('/preferences');
+        },
+        onError: (err: Error) => {
+          setError(err.message || 'Signup failed');
+        },
       }
-    } catch (err) {
-      console.error(err);
-      setError('An unexpected error occurred');
-    } finally {
-      setIsLoading(false);
-    }
+    );
   };
 
   return (
@@ -86,7 +76,7 @@ export function Signup() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={isLoading}
+                disabled={signupMutation.isPending}
                 className="w-full px-4 py-3 border-4 border-black font-bold focus:outline-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
@@ -104,7 +94,7 @@ export function Signup() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={isLoading}
+                disabled={signupMutation.isPending}
                 className="w-full px-4 py-3 border-4 border-black font-bold focus:outline-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
@@ -122,7 +112,7 @@ export function Signup() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                disabled={isLoading}
+                disabled={signupMutation.isPending}
                 className="w-full px-4 py-3 border-4 border-black font-bold focus:outline-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
@@ -130,10 +120,10 @@ export function Signup() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={signupMutation.isPending}
               className="w-full px-6 py-4 bg-cyan-500 border-4 border-black font-black text-lg uppercase shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3"
             >
-              {isLoading ? (
+              {signupMutation.isPending ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Creating account...

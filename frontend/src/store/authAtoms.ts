@@ -16,13 +16,13 @@ export const isAuthenticatedAtom = atom((get) => {
 // Write-only atoms for actions
 export const loginAtom = atom(
   null,
-  (get, set, { user, token }: { user: User; token: string }) => {
+  (_get, set, { user, token }: { user: User; token: string }) => {
     set(userAtom, user);
     set(tokenAtom, token);
   }
 );
 
-export const logoutAtom = atom(null, (get, set) => {
+export const logoutAtom = atom(null, (_get, set) => {
   set(userAtom, null);
   set(tokenAtom, null);
 });

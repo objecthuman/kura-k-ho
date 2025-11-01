@@ -1,39 +1,30 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useSetAtom } from 'jotai';
-import { loginAtom } from '@/store/authAtoms';
-import { authService } from '@/services/authService';
 import { Loader2, Lock, Mail, ArrowRight } from 'lucide-react';
+import { useLogin } from '@/hooks/useAuth';
 
 export function Login() {
   const navigate = useNavigate();
-  const login = useSetAtom(loginAtom);
+  const loginMutation = useLogin();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
 
-    try {
-      const response = await authService.login({ email, password });
-
-      // Backend returns: { message, user, session, access_token }
-      if (response.access_token && response.user) {
-        login({ user: response.user, token: response.access_token });
-        navigate('/');
-      } else {
-        setError(response.error || 'Login failed');
+    loginMutation.mutate(
+      { email, password },
+      {
+        onSuccess: () => {
+          navigate('/');
+        },
+        onError: (err: Error) => {
+          setError(err.message || 'Login failed');
+        },
       }
-    } catch (err) {
-      console.error(err);
-      setError('An unexpected error occurred');
-    } finally {
-      setIsLoading(false);
-    }
+    );
   };
 
 
@@ -75,7 +66,7 @@ export function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={isLoading}
+                disabled={loginMutation.isPending}
                 className="w-full px-4 py-3 border-4 border-black font-bold focus:outline-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
@@ -93,7 +84,7 @@ export function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={isLoading}
+                disabled={loginMutation.isPending}
                 className="w-full px-4 py-3 border-4 border-black font-bold focus:outline-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
@@ -101,10 +92,10 @@ export function Login() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={loginMutation.isPending}
               className="w-full px-6 py-4 bg-pink-500 border-4 border-black font-black text-lg uppercase shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3"
             >
-              {isLoading ? (
+              {loginMutation.isPending ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Signing in...

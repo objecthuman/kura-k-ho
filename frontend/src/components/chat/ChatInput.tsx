@@ -2,19 +2,22 @@ import { useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, Loader2 } from "lucide-react";
+import { useAtomValue } from "jotai";
+import { currentSessionAtom } from "@/store/chatAtoms";
 
 interface ChatInputProps {
-  onSend: (message: string) => void;
+  onSend: (message: string, session_id: string) => void;
   isLoading?: boolean;
   placeholder?: string;
 }
 
 export function ChatInput({ onSend, isLoading, placeholder }: ChatInputProps) {
   const [input, setInput] = useState("");
+  const currentSession = useAtomValue(currentSessionAtom);
 
   const handleSend = () => {
-    if (input.trim() && !isLoading) {
-      onSend(input.trim());
+    if (input.trim() && !isLoading && currentSession?.id) {
+      onSend(input.trim(), currentSession.id);
       setInput("");
     }
   };

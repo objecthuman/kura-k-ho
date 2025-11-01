@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { messagesAtom, chatLoadingAtom, chatModeAtom, addMessageAtom, currentSessionAtom } from "@/store/chatAtoms";
+import { messagesAtom, chatLoadingAtom, chatModeAtom, addMessageAtom, currentSessionAtom, streamingMessageAtom } from "@/store/chatAtoms";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
-import { chatService } from "@/services/chatService";
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
 import type { Message } from "@/types";
 import { Loader2 } from "lucide-react";
+import { API_BASE_URL, getAuthHeaders } from "@/lib/api";
 
 export function ChatContainer() {
   const messages = useAtomValue(messagesAtom);
@@ -14,6 +14,7 @@ export function ChatContainer() {
   const chatMode = useAtomValue(chatModeAtom);
   const addMessage = useSetAtom(addMessageAtom);
   const currentSession = useAtomValue(currentSessionAtom);
+  const [streamingMessage, setStreamingMessage] = useAtom(streamingMessageAtom);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Set up real-time subscription for messages
@@ -25,53 +26,51 @@ export function ChatContainer() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, streamingMessage]);
 
-  const handleSendMessage = async (content: string) => {
+  // When streaming completes, add the message to the messages list
+  useEffect(() => {
+    if (streamingMessage && !streamingMessage.isStreaming) {
+      addMessage(streamingMessage);
+      setStreamingMessage(null);
+    }
+  }, [streamingMessage, addMessage, setStreamingMessage]);
+
+  const handleSendMessage = async (content: string, session_id: string) => {
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
       content,
+      session_id,
       timestamp: new Date(),
     };
     addMessage(userMessage);
 
-    // Send to API
+    // Send to API - response will come via streaming
     setLoading(true);
     try {
-      const response = await chatService.sendMessage({
-        message: content,
-        mode: chatMode,
-        context: messages.slice(-5), // Send last 5 messages for context
+      const response = await fetch(`${API_BASE_URL}/chat/${currentSession?.id}/chat`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          session_id: session_id,
+          user_query: content,
+          mode: chatMode
+        }),
       });
 
-      if (response.success && response.data) {
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: response.data.message,
-          timestamp: new Date(),
-          factCheckResult: response.data.factCheckResult,
-          newsSummary: response.data.newsSummary,
-        };
-        addMessage(assistantMessage);
-      } else {
-        // Error message
-        const errorMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content:
-            response.error ||
-            "Sorry, I encountered an error. Please try again.",
-          timestamp: new Date(),
-        };
-        addMessage(errorMessage);
+      if (!response.ok) {
+        throw new Error("Failed to send message");
       }
+      
+      // Response will be streamed via Supabase broadcast
+      // No need to manually add assistant message
     } catch (error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
+        session_id: session_id,
         content: "Sorry, I encountered an error. Please try again.",
         timestamp: new Date(),
       };
@@ -121,7 +120,10 @@ export function ChatContainer() {
               {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
               ))}
-              {isLoading && (
+              {streamingMessage && (
+                <ChatMessage key="streaming" message={streamingMessage} />
+              )}
+              {isLoading && !streamingMessage && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span className="text-sm">Thinking...</span>

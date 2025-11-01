@@ -15,8 +15,10 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  session_id: string
   factCheckResult?: FactCheckResult;
   newsSummary?: NewsSummary;
+  isStreaming?: boolean;
 }
 
 export interface FactCheckResult {
@@ -60,8 +62,8 @@ export interface ChatSession {
   id: string;
   title: string;
   messages: Message[];
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export type ChatMode = 'fact-check' | 'summarize' | 'general';

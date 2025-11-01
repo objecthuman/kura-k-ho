@@ -7,6 +7,7 @@ export const sessionsAtom = atom<ChatSession[]>([]);
 export const messagesAtom = atom<Message[]>([]);
 export const chatLoadingAtom = atom<boolean>(false);
 export const chatModeAtom = atom<ChatMode>("fact-check");
+export const streamingMessageAtom = atom<Message | null>(null);
 
 // Write-only atoms for actions
 export const addMessageAtom = atom(null, (get, set, message: Message) => {
@@ -14,7 +15,7 @@ export const addMessageAtom = atom(null, (get, set, message: Message) => {
   set(messagesAtom, [...currentMessages, message]);
 });
 
-export const clearMessagesAtom = atom(null, (get, set) => {
+export const clearMessagesAtom = atom(null, (_get, set) => {
   set(messagesAtom, []);
 });
 

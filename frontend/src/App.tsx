@@ -27,6 +27,7 @@ function App() {
               }
             />
             <Route path="chat" element={<Chat />} />
+            <Route path="chat/:cid" element={<Chat/>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

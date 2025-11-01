@@ -3,7 +3,7 @@ import { ChatContainer } from '@/components/chat/ChatContainer';
 import { useAtomValue, useSetAtom, useAtom } from 'jotai';
 import { chatModeAtom, clearMessagesAtom, currentSessionAtom } from '@/store/chatAtoms';
 import { MessageSquare, CheckCircle2, FileText, Plus } from 'lucide-react';
-import { isAuthenticatedAtom, tokenAtom, userAtom } from '@/store/authAtoms';
+import { isAuthenticatedAtom } from '@/store/authAtoms';
 import { useCreateSession } from '@/hooks/useSession';
 
 export function Chat() {
@@ -12,17 +12,13 @@ export function Chat() {
   const clearMessages = useSetAtom(clearMessagesAtom);
   const [currentSession, setCurrentSession] = useAtom(currentSessionAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
-  const user = useAtomValue(userAtom);
-  const token = useAtomValue(tokenAtom);
 
-  const { mutate: createSession, isPending: isCreatingSession } = useCreateSession();
+  const { mutate: createSession } = useCreateSession();
 
 
   // Create a session on mount if authenticated and no session exists
   useEffect(() => {
-    console.log({ isAuthenticated, currentSession, token })
     if (isAuthenticated && !currentSession) {
-      console.log('here')
       createSession();
     }
   }, [isAuthenticated, currentSession, createSession]);
