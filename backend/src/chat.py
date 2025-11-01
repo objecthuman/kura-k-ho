@@ -131,12 +131,16 @@ async def start_chat_flow(
             )
             return
 
+        await channel.subscribe()
+
         searching_message = (
             "Searching for news in the following sites: "
             "english.onlinekhabar.com, kathmandupost.com, thehimalayantimes.com, "
             "nepalitimes.com, theannapurnaexpress.com"
         )
         await send_message(channel, db, session_id, searching_message)
+
+        return
 
         news_articles = await search_nepal_news(user_query)
 
