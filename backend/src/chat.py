@@ -118,6 +118,8 @@ async def start_chat_flow(
     try:
         client = await acreate_client(settings.SUPABASE_URL, settings.SUPABASE_API_KEY)
         channel = client.channel(str(session_id))
+        await channel.subscribe()
+
         intent_output = await validate_news_query(user_query=user_query)
         if not intent_output.is_valid:
             print(
