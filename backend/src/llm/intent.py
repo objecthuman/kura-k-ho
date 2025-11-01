@@ -63,7 +63,7 @@ async def validate_news_query(user_query: str) -> IntentOutput:
         )
 
         response = await client.beta.chat.completions.parse(
-            model="gpt-4",
+            model="gpt-4.1",
             messages=[
                 {"role": "system", "content": VALIDATION_SYSTEM_PROMPT},
                 {"role": "user", "content": user_message},

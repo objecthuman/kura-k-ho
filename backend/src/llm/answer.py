@@ -47,7 +47,7 @@ News Summaries:
 {summaries_text}"""
 
         response = await client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4.1",
             messages=[
                 {"role": "system", "content": ANSWER_SYSTEM_PROMPT},
                 {"role": "user", "content": user_message},

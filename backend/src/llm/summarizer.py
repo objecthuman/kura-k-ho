@@ -39,7 +39,7 @@ Article Content:
 {article["body"]}"""
 
         response = await client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4.1",
             messages=[
                 {"role": "system", "content": SUMMARIZER_SYSTEM_PROMPT},
                 {"role": "user", "content": user_message},
