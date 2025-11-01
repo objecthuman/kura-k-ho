@@ -1,11 +1,13 @@
 import { ChatContainer } from '@/components/chat/ChatContainer';
-import { useChatStore } from '@/store/useChatStore';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useAtomValue, useSetAtom } from 'jotai';
+import { chatModeAtom, clearMessagesAtom, createSessionAtom } from '@/store/chatAtoms';
 import { MessageSquare, CheckCircle2, FileText, Plus } from 'lucide-react';
 
 export function Chat() {
-  const { chatMode, setChatMode, clearMessages, createSession } = useChatStore();
+  const chatMode = useAtomValue(chatModeAtom);
+  const setChatMode = useSetAtom(chatModeAtom);
+  const clearMessages = useSetAtom(clearMessagesAtom);
+  const createSession = useSetAtom(createSessionAtom);
 
   const handleNewChat = () => {
     clearMessages();
@@ -13,51 +15,65 @@ export function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen bg-amber-50">
       {/* Header */}
-      <header className="border-b bg-card">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+      <header className="border-b-4 border-black bg-cyan-300 shadow-[0_4px_0px_0px_rgba(0,0,0,1)]">
+        <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <MessageSquare className="w-6 h-6 text-primary" />
-              <h1 className="text-xl font-bold">News Fact Checker</h1>
+              <div className="bg-black border-2 border-black p-2 rotate-6">
+                <MessageSquare className="w-6 h-6 text-cyan-300" />
+              </div>
+              <h1 className="text-2xl font-black uppercase">Fact Checker</h1>
             </div>
-            <Button variant="outline" size="sm" onClick={handleNewChat}>
-              <Plus className="w-4 h-4 mr-2" />
+            <button
+              onClick={handleNewChat}
+              className="px-4 py-2 bg-pink-500 border-3 border-black font-bold uppercase text-sm shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all flex items-center gap-2 text-white"
+            >
+              <Plus className="w-4 h-4" />
               New Chat
-            </Button>
+            </button>
           </div>
         </div>
       </header>
 
       {/* Mode Selector */}
-      <div className="border-b bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex gap-2">
-            <Badge
-              variant={chatMode === 'fact-check' ? 'default' : 'outline'}
-              className="cursor-pointer px-4 py-2 gap-2"
+      <div className="border-b-4 border-black bg-yellow-100">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex gap-3 flex-wrap">
+            <button
               onClick={() => setChatMode('fact-check')}
+              className={`px-5 py-2.5 border-4 border-black font-black uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all flex items-center gap-2 ${
+                chatMode === 'fact-check'
+                  ? 'bg-green-400'
+                  : 'bg-white'
+              }`}
             >
               <CheckCircle2 className="w-4 h-4" />
               Fact Check
-            </Badge>
-            <Badge
-              variant={chatMode === 'summarize' ? 'default' : 'outline'}
-              className="cursor-pointer px-4 py-2 gap-2"
+            </button>
+            <button
               onClick={() => setChatMode('summarize')}
+              className={`px-5 py-2.5 border-4 border-black font-black uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all flex items-center gap-2 ${
+                chatMode === 'summarize'
+                  ? 'bg-cyan-400'
+                  : 'bg-white'
+              }`}
             >
               <FileText className="w-4 h-4" />
               Summarize
-            </Badge>
-            <Badge
-              variant={chatMode === 'general' ? 'default' : 'outline'}
-              className="cursor-pointer px-4 py-2 gap-2"
+            </button>
+            <button
               onClick={() => setChatMode('general')}
+              className={`px-5 py-2.5 border-4 border-black font-black uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all flex items-center gap-2 ${
+                chatMode === 'general'
+                  ? 'bg-pink-400'
+                  : 'bg-white'
+              }`}
             >
               <MessageSquare className="w-4 h-4" />
               General
-            </Badge>
+            </button>
           </div>
         </div>
       </div>

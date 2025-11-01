@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/store/useAuthStore';
+import { useSetAtom } from 'jotai';
+import { updatePreferencesAtom } from '@/store/authAtoms';
 import { authService } from '@/services/authService';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Settings, Sparkles, ArrowRight } from 'lucide-react';
 
 const CATEGORIES = [
   'Politics',
@@ -20,26 +18,23 @@ const CATEGORIES = [
   'World News',
 ];
 
-const REGIONS = [
-  { value: 'us', label: 'United States' },
-  { value: 'uk', label: 'United Kingdom' },
-  { value: 'in', label: 'India' },
-  { value: 'global', label: 'Global' },
-];
-
-const LANGUAGES = [
-  { value: 'en', label: 'English' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'fr', label: 'French' },
-  { value: 'de', label: 'German' },
+const CATEGORY_COLORS = [
+  'bg-red-400',
+  'bg-blue-400',
+  'bg-green-400',
+  'bg-yellow-400',
+  'bg-purple-400',
+  'bg-pink-400',
+  'bg-cyan-400',
+  'bg-orange-400',
+  'bg-lime-400',
+  'bg-indigo-400',
 ];
 
 export function Preferences() {
   const navigate = useNavigate();
-  const updatePreferences = useAuthStore((state) => state.updatePreferences);
+  const updatePreferences = useSetAtom(updatePreferencesAtom);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedRegion, setSelectedRegion] = useState('global');
-  const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -65,15 +60,12 @@ export function Preferences() {
     try {
       const preferences = {
         categories: selectedCategories,
-        sources: [],
-        language: selectedLanguage,
-        region: selectedRegion,
+        sources: []
       };
 
       const response = await authService.updatePreferences(preferences);
 
       if (response.success && response.data) {
-        updatePreferences(preferences);
         navigate('/');
       } else {
         setError(response.error || 'Failed to save preferences');
@@ -86,87 +78,102 @@ export function Preferences() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted px-4 py-8">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">Set Your Preferences</CardTitle>
-          <CardDescription>
-            Customize your news feed by selecting your interests
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-6">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden">
+      {/* Decorative shapes */}
+      <div className="absolute top-10 right-10 w-24 h-24 bg-pink-400 border-4 border-black rotate-12 -z-10" />
+      <div className="absolute bottom-20 left-10 w-32 h-32 bg-cyan-400 border-4 border-black -rotate-12 -z-10" />
+      <div className="absolute top-1/3 left-1/4 w-16 h-16 bg-yellow-300 border-4 border-black rotate-45 -z-10" />
+
+      <div className="w-full max-w-3xl">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-block mb-6">
+            <div className="bg-yellow-300 border-4 border-black p-4 rotate-2 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+              <Settings className="w-12 h-12" />
+            </div>
+          </div>
+          <div className="inline-block bg-white border-4 border-black px-8 py-4 -rotate-1 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] mb-4">
+            <h1 className="text-4xl md:text-5xl font-black uppercase">Your Preferences</h1>
+          </div>
+          <p className="text-lg font-bold mt-4 max-w-xl mx-auto">
+            Pick your favorite topics! We'll curate news just for you.
+          </p>
+        </div>
+
+        {/* Form Card */}
+        <div className="bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
+          <form onSubmit={handleSubmit} className="space-y-8">
             {error && (
-              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">
-                {error}
+              <div className="bg-red-400 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <p className="font-bold text-sm">{error}</p>
               </div>
             )}
 
-            <div className="space-y-3">
-              <label className="text-sm font-medium">
-                Select Categories (at least 1)
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {CATEGORIES.map((category) => (
-                  <Badge
-                    key={category}
-                    variant={selectedCategories.includes(category) ? 'default' : 'outline'}
-                    className="cursor-pointer px-4 py-2"
-                    onClick={() => toggleCategory(category)}
-                  >
-                    {category}
-                  </Badge>
-                ))}
+            {/* Categories */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-6">
+                <Sparkles className="w-5 h-5" />
+                <label className="text-lg font-black uppercase">
+                  Choose Categories (Pick at least 1!)
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {CATEGORIES.map((category, index) => {
+                  const isSelected = selectedCategories.includes(category);
+                  const colorClass = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+
+                  return (
+                    <button
+                      key={category}
+                      type="button"
+                      onClick={() => toggleCategory(category)}
+                      className={`px-4 py-3 border-4 border-black font-black text-sm uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all ${
+                        isSelected ? colorClass : 'bg-white'
+                      }`}
+                    >
+                      {category}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="space-y-3">
-              <label className="text-sm font-medium">Region</label>
-              <div className="grid grid-cols-2 gap-2">
-                {REGIONS.map((region) => (
-                  <Button
-                    key={region.value}
-                    type="button"
-                    variant={selectedRegion === region.value ? 'default' : 'outline'}
-                    onClick={() => setSelectedRegion(region.value)}
-                    className="w-full"
-                  >
-                    {region.label}
-                  </Button>
-                ))}
+            {/* Selected Count */}
+            {selectedCategories.length > 0 && (
+              <div className="bg-green-300 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -rotate-1">
+                <p className="font-black text-center">
+                  {selectedCategories.length} {selectedCategories.length === 1 ? 'CATEGORY' : 'CATEGORIES'} SELECTED!
+                </p>
               </div>
-            </div>
+            )}
 
-            <div className="space-y-3">
-              <label className="text-sm font-medium">Language</label>
-              <div className="grid grid-cols-2 gap-2">
-                {LANGUAGES.map((language) => (
-                  <Button
-                    key={language.value}
-                    type="button"
-                    variant={selectedLanguage === language.value ? 'default' : 'outline'}
-                    onClick={() => setSelectedLanguage(language.value)}
-                    className="w-full"
-                  >
-                    {language.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading || selectedCategories.length === 0}
+              className="w-full px-8 py-4 bg-pink-500 border-4 border-black font-black text-xl uppercase shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3 text-white"
+            >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="w-6 h-6 animate-spin" />
                   Saving...
                 </>
               ) : (
-                'Continue'
+                <>
+                  Continue
+                  <ArrowRight className="w-6 h-6" />
+                </>
               )}
-            </Button>
-          </CardContent>
-        </form>
-      </Card>
+            </button>
+          </form>
+        </div>
+
+        {/* Helper Text */}
+        <p className="text-center mt-6 text-sm font-bold text-gray-700">
+          You can change these preferences anytime from your settings!
+        </p>
+      </div>
     </div>
   );
 }

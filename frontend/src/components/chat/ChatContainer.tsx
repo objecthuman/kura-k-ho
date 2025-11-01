@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { useChatStore } from "@/store/useChatStore";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { messagesAtom, chatLoadingAtom, chatModeAtom, addMessageAtom } from "@/store/chatAtoms";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { chatService } from "@/services/chatService";
@@ -7,8 +8,10 @@ import type { Message } from "@/types";
 import { Loader2 } from "lucide-react";
 
 export function ChatContainer() {
-  const { messages, isLoading, chatMode, addMessage, setLoading } =
-    useChatStore();
+  const messages = useAtomValue(messagesAtom);
+  const [isLoading, setLoading] = useAtom(chatLoadingAtom);
+  const chatMode = useAtomValue(chatModeAtom);
+  const addMessage = useSetAtom(addMessageAtom);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {

@@ -8,8 +8,6 @@ export interface User {
 export interface NewsPreferences {
   categories: string[];
   sources: string[];
-  language: string;
-  region: string;
 }
 
 export interface Message {

@@ -6,7 +6,6 @@ import { Login } from "@/pages/Login";
 import { Signup } from "@/pages/Signup";
 import { Preferences } from "@/pages/Preferences";
 import { Chat } from "@/pages/Chat";
-import { NewsFeed } from "@/pages/NewsFeed";
 
 function App() {
   return (
@@ -25,7 +24,6 @@ function App() {
             }
           />
           <Route path="chat" element={<Chat />} />
-          <Route path="news" element={<NewsFeed />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

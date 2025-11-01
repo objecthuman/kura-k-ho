@@ -1,15 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuthStore } from '@/store/useAuthStore';
+import { useSetAtom } from 'jotai';
+import { loginAtom } from '@/store/authAtoms';
 import { authService } from '@/services/authService';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Lock, Mail, ArrowRight, UserPlus } from 'lucide-react';
 
 export function Signup() {
   const navigate = useNavigate();
-  const login = useAuthStore((state) => state.login);
+  const login = useSetAtom(loginAtom);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -37,7 +35,7 @@ export function Signup() {
 
       // Backend returns: { message, user, session: { access_token, ... } }
       if (response.user && response.session?.access_token) {
-        login(response.user, response.session.access_token);
+        login({ user: response.user, token: response.session.access_token });
         navigate('/preferences');
       } else {
         setError(response.error || 'Signup failed');
@@ -51,26 +49,37 @@ export function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
-          <CardDescription className="text-center">
-            Sign up to start fact-checking news
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden">
+      {/* Decorative shapes */}
+      <div className="absolute top-32 left-20 w-32 h-32 bg-yellow-300 border-4 border-black -rotate-12 -z-10" />
+      <div className="absolute bottom-20 right-32 w-24 h-24 bg-pink-400 border-4 border-black rotate-12 -z-10" />
+      <div className="absolute top-1/3 right-1/4 w-16 h-16 bg-cyan-400 border-4 border-black -rotate-45 -z-10" />
+
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-block bg-pink-500 border-4 border-black px-6 py-3 -rotate-1 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] mb-6">
+            <h1 className="text-4xl font-black uppercase text-white">Join Us!</h1>
+          </div>
+          <p className="text-lg font-bold">Create account & fight fake news</p>
+        </div>
+
+        {/* Form Card */}
+        <div className="bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">
-                {error}
+              <div className="bg-red-400 border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <p className="font-bold text-sm">{error}</p>
               </div>
             )}
+
+            {/* Email Field */}
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
+              <label htmlFor="email" className="text-sm font-black uppercase flex items-center gap-2">
+                <Mail className="w-4 h-4" />
                 Email
               </label>
-              <Input
+              <input
                 id="email"
                 type="email"
                 placeholder="you@example.com"
@@ -78,13 +87,17 @@ export function Signup() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
+                className="w-full px-4 py-3 border-4 border-black font-bold focus:outline-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
+
+            {/* Password Field */}
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
+              <label htmlFor="password" className="text-sm font-black uppercase flex items-center gap-2">
+                <Lock className="w-4 h-4" />
                 Password
               </label>
-              <Input
+              <input
                 id="password"
                 type="password"
                 placeholder="••••••••"
@@ -92,13 +105,17 @@ export function Signup() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
+                className="w-full px-4 py-3 border-4 border-black font-bold focus:outline-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
+
+            {/* Confirm Password Field */}
             <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="text-sm font-medium">
+              <label htmlFor="confirmPassword" className="text-sm font-black uppercase flex items-center gap-2">
+                <Lock className="w-4 h-4" />
                 Confirm Password
               </label>
-              <Input
+              <input
                 id="confirmPassword"
                 type="password"
                 placeholder="••••••••"
@@ -106,29 +123,42 @@ export function Signup() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 disabled={isLoading}
+                className="w-full px-4 py-3 border-4 border-black font-bold focus:outline-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full px-6 py-4 bg-cyan-500 border-4 border-black font-black text-lg uppercase shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3"
+            >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin" />
                   Creating account...
                 </>
               ) : (
-                'Sign Up'
+                <>
+                  <UserPlus className="w-5 h-5" />
+                  Sign Up
+                  <ArrowRight className="w-5 h-5" />
+                </>
               )}
-            </Button>
-            <p className="text-sm text-center text-muted-foreground">
-              Already have an account?{' '}
-              <Link to="/login" className="text-primary hover:underline">
-                Sign in
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
-      </Card>
+            </button>
+          </form>
+        </div>
+
+        {/* Sign In Link */}
+        <div className="mt-6 text-center">
+          <p className="text-base font-bold">
+            Already have an account?{' '}
+            <Link to="/login" className="text-cyan-600 underline hover:text-pink-600 transition-colors font-black">
+              Sign in here!
+            </Link>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
