@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from uuid import UUID
 from src.llm.intent import validate_news_query
+from src.llm.answer import generate_answer
 
 from supabase import acreate_client
 
@@ -135,6 +136,7 @@ async def start_chat_flow(
         news_articles = await search_nepal_news(user_query)
 
         if not news_articles:
+            send_message(channel,db,session_id,"No particular article as much was found.")
             print("No news articles found")
             return
 
@@ -160,12 +162,32 @@ async def start_chat_flow(
         curating_message = "Finished summarizing. Creating a final response for you..."
         await send_message(channel, db, session_id, curating_message)
 
+        summaries_with_sources = [
+            {"source": article["source"], "summary": summary}
+            for article, summary in zip(valid_articles, summaries)
+            if summary is not None
+        ]
+
+        if not summaries_with_sources:
+            print("No summaries were generated")
+            return
+
+        final_answer = await generate_answer(user_query, summaries_with_sources)
+
+        if final_answer:
+            await send_message(channel, db, session_id, final_answer)
+            print("Final answer sent to user")
+        else:
+            print("Failed to generate final answer")
+
+
         for i, summary in enumerate(summaries):
             print(f"Summary {i + 1}:")
             print(summary)
             print("---")
 
     except Exception as e:
+        send_message(channel,db,session_id,"Something went wrong while generating your response.")
         print(f"Error in chat flow: {e}")
 
 
@@ -205,3 +227,5 @@ async def chat(
         raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+     
