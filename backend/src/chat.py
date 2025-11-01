@@ -35,6 +35,10 @@ class ChatResponse(BaseModel):
     session_id: UUID
 
 
+class DirectChatResponse(BaseModel):
+    answer: str
+
+
 async def send_message(channel, db: AsyncSession, session_id: UUID, content: str):
     await channel.send_broadcast(
         event="message-broadcast",
@@ -83,6 +87,7 @@ async def scrape_link(article: NewsArticle) -> ScrapedNews | None:
             body=result["body"],
             date=article["date"],
             source=source,
+            link=article["link"],
         )
 
     return None
@@ -133,11 +138,12 @@ async def start_chat_flow(
             )
             return
 
-        searching_message = (
-            "Searching for news in the following sites: "
-            "english.onlinekhabar.com, kathmandupost.com, thehimalayantimes.com, "
-            "nepalitimes.com, theannapurnaexpress.com"
-        )
+        searching_message = """Searching for news in the following sites:
+- [Online Khabar](https://english.onlinekhabar.com)
+- [The Kathmandu Post](https://kathmandupost.com)
+- [The Himalayan Times](https://thehimalayantimes.com)
+- [Nepali Times](https://nepalitimes.com)
+- [The Annapurna Express](https://theannapurnaexpress.com)"""
         await send_message(channel, db, session_id, searching_message)
 
         news_articles = await search_nepal_news(user_query)
@@ -154,8 +160,10 @@ async def start_chat_flow(
 
         print(f"Found {len(news_articles)} news articles")
 
-        links_list = "\n".join([f"- {article['title']}" for article in news_articles])
-        checking_message = f"Found {len(news_articles)} articles. Checking the following links:\n\n{links_list}"
+        links_list = "\n".join(
+            [f"- [{article['title']}]({article['link']})" for article in news_articles]
+        )
+        checking_message = f"Found {len(news_articles)} articles. Checking the following:\n\n{links_list}"
         await send_message(channel, db, session_id, checking_message)
 
         valid_articles = await scrape_articles(news_articles)
@@ -181,7 +189,7 @@ async def start_chat_flow(
         await send_message(channel, db, session_id, curating_message)
 
         summaries_with_sources = [
-            {"source": article["source"], "summary": summary}
+            {"source": article["source"], "summary": summary, "link": article["link"]}
             for article, summary in zip(valid_articles, summaries)
             if summary is not None
         ]
@@ -252,3 +260,60 @@ async def chat(
         raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/direct", response_model=DirectChatResponse)
+async def direct_chat(request: ChatRequest):
+    try:
+        intent_result = await validate_news_query(request.user_query)
+
+        if not intent_result.is_valid:
+            return DirectChatResponse(
+                answer=intent_result.clarification_message,
+            )
+
+        news_articles = await search_nepal_news(request.user_query)
+
+        if not news_articles:
+            return DirectChatResponse(
+                answer="Something went wrong while searching for news articles. Please try again.",
+            )
+
+        valid_articles = await scrape_articles(news_articles)
+
+        if not valid_articles:
+            return DirectChatResponse(
+                answer="Something went wrong while scraping the articles. Please try again.",
+            )
+
+        summaries = await summarize_articles(valid_articles)
+
+        summaries_with_sources = [
+            {"source": article["source"], "summary": summary, "link": article["link"]}
+            for article, summary in zip(valid_articles, summaries)
+            if summary is not None
+        ]
+
+        if not summaries_with_sources:
+            return DirectChatResponse(
+                answer="Something went wrong while generating summaries. Please try again.",
+            )
+
+        final_answer = await generate_answer(
+            request.user_query, summaries_with_sources, mrkdwn=False
+        )
+
+        if not final_answer:
+            return DirectChatResponse(
+                answer="Something went wrong while generating the final response. Please try again.",
+            )
+
+        return DirectChatResponse(
+            answer=final_answer,
+        )
+
+    except Exception as e:
+        print(f"Error in direct chat: {e}")
+        return DirectChatResponse(
+            answer="Something went wrong while processing your request. Please try again.",
+        )

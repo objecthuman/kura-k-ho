@@ -6,6 +6,7 @@ class ScrapedNews(TypedDict):
     body: str
     date: str
     source: str
+    link: str
 
 
 class ScrapedArticle(TypedDict):
