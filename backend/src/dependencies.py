@@ -12,7 +12,6 @@ async def get_current_user(
         token = credentials.credentials
 
         user = supabase_client.auth.get_user(token)
-        print(user)
         if not user or not user.user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
