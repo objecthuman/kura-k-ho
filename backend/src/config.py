@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     POSTGRES_URI_ORM: str
     SERPER_API_KEY: str
     SERPER_API_URL: str = "https://google.serper.dev/search"
+    OPENAI_KEY: str
 
     model_config = SettingsConfigDict(
         env_file=".env",

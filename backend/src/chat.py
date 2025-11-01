@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,8 +11,13 @@ from src.db.pg_session import get_db_session
 from src.db.models.chat_sesion import ChatSession
 from src.db.models.chat_message import ChatMessage
 from src.dependencies import get_current_user
-from src.scraper.annapurna_scraper import scrape_news
+from src.scraper.annapurna_scraper import scrape_news as scrape_annapurna
+from src.scraper.online_khabar_scrape import scrape_news as scrape_online_khabar
+from src.scraper.kathmandupost_scraper import scrape_news as scrape_kathmandupost
+from src.scraper.himalayantime_scraper import scrape_news as scrape_himalayantimes
+from src.scraper.nepalitimes_scraper import scrape_news as scrape_nepalitimes
 from src.scraper.google_search import NewsArticle, search_nepal_news
+from src.llm.summarizer import summarize
 from src.config import settings
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -32,9 +38,67 @@ class ScrapedNews(BaseModel):
     date: str
 
 
-async def scrape_link(article: NewsArticle) -> ScrapedNews:
-    if article["link"].startswith("https://anarpurna.com"):
-        await scrape_news(article["link"])
+async def send_message(channel, db: AsyncSession, session_id: UUID, content: str):
+    await channel.send_broadcast(
+        event="message-broadcast",
+        data={
+            "session_id": str(session_id),
+            "role": "assistant",
+            "content": content,
+        },
+    )
+
+    message = ChatMessage(
+        session_id=session_id,
+        role="assistant",
+        content=content,
+    )
+    db.add(message)
+    await db.commit()
+
+
+async def scrape_link(article: NewsArticle) -> ScrapedNews | None:
+    link: str = article["link"]
+
+    if "english.onlinekhabar.com" in link:
+        result = await scrape_online_khabar(link)
+    elif "kathmandupost.com" in link:
+        result = await scrape_kathmandupost(link)
+    elif "thehimalayantimes.com" in link:
+        result = await scrape_himalayantimes(link)
+    elif "nepalitimes.com" in link:
+        result = await scrape_nepalitimes(link)
+    elif "theannapurnaexpress.com" in link:
+        result = await scrape_annapurna(link)
+    else:
+        print(f"No scraper available for: {link}")
+        return None
+
+    if result:
+        return ScrapedNews(
+            title=result["heading"],
+            body=result["body"],
+            date=article["date"],
+        )
+
+    return None
+
+
+async def scrape_articles(news_articles: list[NewsArticle]) -> list[ScrapedNews]:
+    scraped_articles = await asyncio.gather(
+        *[scrape_link(article) for article in news_articles]
+    )
+    return [article for article in scraped_articles if article is not None]
+
+
+async def summarize_articles(articles: list[ScrapedNews]) -> list[str]:
+    summaries = await asyncio.gather(
+        *[
+            summarize({"heading": article.title, "body": article.body})
+            for article in articles
+        ]
+    )
+    return [summary for summary in summaries if summary is not None]
 
 
 async def start_chat_flow(
@@ -44,36 +108,17 @@ async def start_chat_flow(
     db: AsyncSession,
 ):
     try:
+        client = await acreate_client(settings.SUPABASE_URL, settings.SUPABASE_API_KEY)
+        channel = client.channel(str(session_id))
+
         searching_message = (
             "Searching for news in the following sites: "
             "english.onlinekhabar.com, kathmandupost.com, thehimalayantimes.com, "
             "nepalitimes.com, theannapurnaexpress.com"
         )
-
-        client = await acreate_client(settings.SUPABASE_URL, settings.SUPABASE_API_KEY)
-
-        channel = client.channel(str(session_id))
-
-        await channel.send_broadcast(
-            event="message-broadcast",
-            data={
-                "session_id": str(session_id),
-                "role": "assistant",
-                "content": searching_message,
-            },
-        )
-
-        message = ChatMessage(
-            session_id=session_id,
-            role="assistant",
-            content=searching_message,
-        )
-        db.add(message)
-        await db.commit()
+        await send_message(channel, db, session_id, searching_message)
 
         news_articles = await search_nepal_news(user_query)
-
-        # scraped_artciles = await asyncio.gather()
 
         if not news_articles:
             print("No news articles found")
@@ -81,10 +126,23 @@ async def start_chat_flow(
 
         print(f"Found {len(news_articles)} news articles")
 
-        for article in news_articles:
-            print(f"Title: {article['title']}")
-            print(f"Link: {article['link']}")
-            print(f"Date: {article['date']}")
+        links_list = "\n".join([f"- {article['title']}" for article in news_articles])
+        checking_message = f"Found {len(news_articles)} articles. Checking the following links:\n\n{links_list}"
+        await send_message(channel, db, session_id, checking_message)
+
+        valid_articles = await scrape_articles(news_articles)
+
+        if not valid_articles:
+            print("No articles could be scraped")
+            return
+
+        print(f"Successfully scraped {len(valid_articles)} articles")
+
+        summaries = await summarize_articles(valid_articles)
+
+        for i, summary in enumerate(summaries):
+            print(f"Summary {i + 1}:")
+            print(summary)
             print("---")
 
     except Exception as e:

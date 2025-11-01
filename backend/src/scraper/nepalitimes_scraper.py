@@ -1,8 +1,9 @@
 import httpx
 from bs4 import BeautifulSoup
+from src.scraper.types import ScrapedArticle
 
 
-async def scrape_news(url):
+async def scrape_news(url: str) -> ScrapedArticle | None:
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(url, headers={"User-Agent": "Mozilla/5.0"})
@@ -30,5 +31,5 @@ async def scrape_news(url):
         return {"heading": heading, "body": body}
 
     except Exception as e:
-        print(f"❌ Error scraping {url}: {e}")
-        return {"heading": None, "body": None}
+        print(f"Error scraping {url}: {e}")
+        return None
