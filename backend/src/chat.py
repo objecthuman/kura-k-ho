@@ -19,6 +19,7 @@ from src.scraper.nepalitimes_scraper import scrape_news as scrape_nepalitimes
 from src.scraper.google_search import NewsArticle, search_nepal_news
 from src.llm.summarizer import summarize
 from src.config import settings
+from src.scraper.types import ScrapedNews
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -30,12 +31,6 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     message: str
     session_id: UUID
-
-
-class ScrapedNews(BaseModel):
-    title: str
-    body: str
-    date: str
 
 
 async def send_message(channel, db: AsyncSession, session_id: UUID, content: str):
@@ -58,18 +53,24 @@ async def send_message(channel, db: AsyncSession, session_id: UUID, content: str
 
 
 async def scrape_link(article: NewsArticle) -> ScrapedNews | None:
-    link: str = article["link"]
+    link = article["link"]
+    source = ""
 
     if "english.onlinekhabar.com" in link:
         result = await scrape_online_khabar(link)
+        source = "Online Khabar"
     elif "kathmandupost.com" in link:
         result = await scrape_kathmandupost(link)
+        source = "The Kathmandu Post"
     elif "thehimalayantimes.com" in link:
         result = await scrape_himalayantimes(link)
+        source = "The Himalayan Times"
     elif "nepalitimes.com" in link:
         result = await scrape_nepalitimes(link)
+        source = "Nepali Times"
     elif "theannapurnaexpress.com" in link:
         result = await scrape_annapurna(link)
+        source = "The Annapurna Express"
     else:
         print(f"No scraper available for: {link}")
         return None
@@ -79,6 +80,7 @@ async def scrape_link(article: NewsArticle) -> ScrapedNews | None:
             title=result["heading"],
             body=result["body"],
             date=article["date"],
+            source=source,
         )
 
     return None
@@ -94,7 +96,12 @@ async def scrape_articles(news_articles: list[NewsArticle]) -> list[ScrapedNews]
 async def summarize_articles(articles: list[ScrapedNews]) -> list[str]:
     summaries = await asyncio.gather(
         *[
-            summarize({"heading": article.title, "body": article.body})
+            summarize(
+                {
+                    "heading": article["title"],
+                    "body": article["body"],
+                }
+            )
             for article in articles
         ]
     )
@@ -104,7 +111,6 @@ async def summarize_articles(articles: list[ScrapedNews]) -> list[str]:
 async def start_chat_flow(
     session_id: UUID,
     user_query: str,
-    user_id: str,
     db: AsyncSession,
 ):
     try:
@@ -138,7 +144,13 @@ async def start_chat_flow(
 
         print(f"Successfully scraped {len(valid_articles)} articles")
 
+        summarizing_message = f"Summarizing {len(valid_articles)} articles..."
+        await send_message(channel, db, session_id, summarizing_message)
+
         summaries = await summarize_articles(valid_articles)
+
+        curating_message = "Finished summarizing. Creating a final response for you..."
+        await send_message(channel, db, session_id, curating_message)
 
         for i, summary in enumerate(summaries):
             print(f"Summary {i + 1}:")
@@ -176,7 +188,6 @@ async def chat(
             start_chat_flow,
             session_id=session_id,
             user_query=request.user_query,
-            user_id=current_user.id,
             db=db,
         )
 
