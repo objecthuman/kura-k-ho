@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { messagesAtom, chatLoadingAtom, chatModeAtom, addMessageAtom } from "@/store/chatAtoms";
+import { messagesAtom, chatLoadingAtom, chatModeAtom, addMessageAtom, currentSessionAtom } from "@/store/chatAtoms";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { chatService } from "@/services/chatService";
+import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
 import type { Message } from "@/types";
 import { Loader2 } from "lucide-react";
 
@@ -12,7 +13,11 @@ export function ChatContainer() {
   const [isLoading, setLoading] = useAtom(chatLoadingAtom);
   const chatMode = useAtomValue(chatModeAtom);
   const addMessage = useSetAtom(addMessageAtom);
+  const currentSession = useAtomValue(currentSessionAtom);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Set up real-time subscription for messages
+  useRealtimeMessages(currentSession?.id || null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

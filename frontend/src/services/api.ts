@@ -18,12 +18,14 @@ class ApiService {
     // Add request interceptor for authentication
     this.api.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem("auth-storage");
+        const token = localStorage.getItem("auth-token");
+        console.log("inside interceptor", {token})
         if (token) {
           try {
-            const authData = JSON.parse(token);
-            if (authData.state?.token) {
-              config.headers.Authorization = `Bearer ${authData.state.token}`;
+            const authToken = JSON.parse(token)
+            console.log("token", authToken)
+            if (token) {
+              config.headers.Authorization = `Bearer ${authToken}`;
             }
           } catch (error) {
             console.error("Error parsing token:", error);
@@ -41,7 +43,7 @@ class ApiService {
         if (error.response?.status === 401) {
           // Handle unauthorized access
           localStorage.removeItem("auth-storage");
-          window.location.href = "/login";
+          // window.location.href = "/login";
         }
         return Promise.reject(error);
       },

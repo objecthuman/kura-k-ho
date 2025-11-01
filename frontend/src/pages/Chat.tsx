@@ -1,16 +1,35 @@
+import { useEffect } from 'react';
 import { ChatContainer } from '@/components/chat/ChatContainer';
-import { useAtomValue, useSetAtom } from 'jotai';
-import { chatModeAtom, clearMessagesAtom, createSessionAtom } from '@/store/chatAtoms';
+import { useAtomValue, useSetAtom, useAtom } from 'jotai';
+import { chatModeAtom, clearMessagesAtom, currentSessionAtom } from '@/store/chatAtoms';
 import { MessageSquare, CheckCircle2, FileText, Plus } from 'lucide-react';
+import { isAuthenticatedAtom, tokenAtom, userAtom } from '@/store/authAtoms';
+import { useCreateSession } from '@/hooks/useSession';
 
 export function Chat() {
   const chatMode = useAtomValue(chatModeAtom);
   const setChatMode = useSetAtom(chatModeAtom);
   const clearMessages = useSetAtom(clearMessagesAtom);
-  const createSession = useSetAtom(createSessionAtom);
+  const [currentSession, setCurrentSession] = useAtom(currentSessionAtom);
+  const isAuthenticated = useAtomValue(isAuthenticatedAtom);
+  const user = useAtomValue(userAtom);
+  const token = useAtomValue(tokenAtom);
+
+  const { mutate: createSession, isPending: isCreatingSession } = useCreateSession();
+
+
+  // Create a session on mount if authenticated and no session exists
+  useEffect(() => {
+    console.log({ isAuthenticated, currentSession, token })
+    if (isAuthenticated && !currentSession) {
+      console.log('here')
+      createSession();
+    }
+  }, [isAuthenticated, currentSession, createSession]);
 
   const handleNewChat = () => {
     clearMessages();
+    setCurrentSession(null);
     createSession();
   };
 
@@ -43,33 +62,30 @@ export function Chat() {
           <div className="flex gap-3 flex-wrap">
             <button
               onClick={() => setChatMode('fact-check')}
-              className={`px-5 py-2.5 border-4 border-black font-black uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all flex items-center gap-2 ${
-                chatMode === 'fact-check'
-                  ? 'bg-green-400'
-                  : 'bg-white'
-              }`}
+              className={`px-5 py-2.5 border-4 border-black font-black uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all flex items-center gap-2 ${chatMode === 'fact-check'
+                ? 'bg-green-400'
+                : 'bg-white'
+                }`}
             >
               <CheckCircle2 className="w-4 h-4" />
               Fact Check
             </button>
             <button
               onClick={() => setChatMode('summarize')}
-              className={`px-5 py-2.5 border-4 border-black font-black uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all flex items-center gap-2 ${
-                chatMode === 'summarize'
-                  ? 'bg-cyan-400'
-                  : 'bg-white'
-              }`}
+              className={`px-5 py-2.5 border-4 border-black font-black uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all flex items-center gap-2 ${chatMode === 'summarize'
+                ? 'bg-cyan-400'
+                : 'bg-white'
+                }`}
             >
               <FileText className="w-4 h-4" />
               Summarize
             </button>
             <button
               onClick={() => setChatMode('general')}
-              className={`px-5 py-2.5 border-4 border-black font-black uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all flex items-center gap-2 ${
-                chatMode === 'general'
-                  ? 'bg-pink-400'
-                  : 'bg-white'
-              }`}
+              className={`px-5 py-2.5 border-4 border-black font-black uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all flex items-center gap-2 ${chatMode === 'general'
+                ? 'bg-pink-400'
+                : 'bg-white'
+                }`}
             >
               <MessageSquare className="w-4 h-4" />
               General
