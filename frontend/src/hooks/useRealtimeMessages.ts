@@ -37,7 +37,7 @@ export function useRealtimeMessages(sessionId: string | null) {
               setStreamingMessage({
                 id: chunk.message_id || Date.now().toString(),
                 role: chunk.role || 'assistant',
-                content: '',
+                content: chunk.content ?? "",
                 session_id: chunk.session_id,
                 timestamp: new Date(chunk.timestamp || Date.now()),
                 isStreaming: true,

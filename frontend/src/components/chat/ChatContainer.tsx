@@ -17,6 +17,8 @@ export function ChatContainer() {
   const [streamingMessage, setStreamingMessage] = useAtom(streamingMessageAtom);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  console.log({ streamingMessage })
+
   // Set up real-time subscription for messages
   useRealtimeMessages(currentSession?.id || null);
 
@@ -63,9 +65,8 @@ export function ChatContainer() {
       if (!response.ok) {
         throw new Error("Failed to send message");
       }
-      
-      // Response will be streamed via Supabase broadcast
-      // No need to manually add assistant message
+
+      const data = await response.json();
     } catch (error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
